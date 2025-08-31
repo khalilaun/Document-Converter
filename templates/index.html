@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Document Converter</title>
+<style>
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f5f7;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 50px 20px;
+    min-height: 100vh;
+    box-sizing: border-box;
+}
+h1 {
+    color: #333;
+    margin-bottom: 40px;
+}
+.upload-area {
+    width: 350px;
+    height: 220px;
+    border: 2px dashed #bbb;
+    border-radius: 20px;
+    background-color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #888;
+    font-weight: bold;
+    margin-bottom: 40px;
+    text-align: center;
+    transition: background-color 0.2s, border-color 0.2s;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    flex-direction: column;
+    position: relative;
+}
+.upload-area.dragover {
+    background-color: #e0f7ff;
+    border-color: #00aaff;
+    color: #00aaff;
+}
+.upload-icon {
+    font-size: 48px;
+    margin-bottom: 10px;
+}
+.output-options {
+    display: flex;
+    gap: 30px;
+    margin-bottom: 40px;
+}
+.option {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: pointer;
+}
+.circle-btn {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 2px solid #888;
+    background-color: transparent;
+    margin-bottom: 5px;
+    transition: all 0.2s;
+}
+.circle-btn.selected {
+    background-color: #4CAF50;
+    border-color: #4CAF50;
+}
+.label {
+    font-size: 14px;
+    color: #333;
+}
+button.convert-btn {
+    padding: 14px 50px;
+    background-color: #007bff;
+    color: white;
+    font-size: 18px;
+    border: none;
+    border-radius: 50px;
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.2s;
+    display: block;
+    margin: 0 auto;
+}
+button.convert-btn:hover {
+    background-color: #0056b3;
+    transform: scale(1.05);
+}
+footer {
+    text-align: center;
+    font-size: 14px;
+    color: #888;
+    margin-top: 50px;
+}
+</style>
+</head>
+<body>
+<h1>Document Converter</h1>
+
+<div class="upload-area" id="upload-area">
+    <div class="upload-icon" id="upload-icon">📄</div>
+    <div id="upload-text">Drop your file here or click to upload</div>
+</div>
+
+<form method="POST" enctype="multipart/form-data" id="uploadForm">
+    <input type="file" name="file" id="fileInput" hidden required>
+    <input type="hidden" name="output_type" id="output_type" value="pdf">
+
+    <div class="output-options">
+        <div class="option">
+            <div class="circle-btn selected" data-type="pdf"></div>
+            <div class="label">PDF</div>
+        </div>
+        <div class="option">
+            <div class="circle-btn" data-type="docx"></div>
+            <div class="label">DOCX</div>
+        </div>
+        <div class="option">
+            <div class="circle-btn" data-type="doc"></div>
+            <div class="label">DOC</div>
+        </div>
+        <div class="option">
+            <div class="circle-btn" data-type="ps"></div>
+            <div class="label">PS</div>
+        </div>
+    </div>
+
+    <button type="submit" class="convert-btn">Convert</button>
+</form>
+
+<footer>Made by Khalil Aun</footer>
+
+<script>
+const uploadArea = document.getElementById("upload-area");
+const fileInput = document.getElementById("fileInput");
+const uploadText = document.getElementById("upload-text");
+const uploadIcon = document.getElementById("upload-icon");
+
+// Click to upload
+uploadArea.addEventListener("click", () => fileInput.click());
+
+// When file is selected via input
+fileInput.addEventListener("change", () => {
+    if(fileInput.files.length > 0){
+        displayFile(fileInput.files[0]);
+    }
+});
+
+// Drag events
+uploadArea.addEventListener("dragover", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    uploadArea.classList.add("dragover");
+});
+uploadArea.addEventListener("dragleave", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    uploadArea.classList.remove("dragover");
+});
+uploadArea.addEventListener("drop", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    uploadArea.classList.remove("dragover");
+
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+        fileInput.files = files; // Update hidden input
+        displayFile(files[0]);
+    }
+});
+
+// Function to display file in upload area
+function displayFile(file) {
+    uploadText.textContent = file.name;
+    const ext = file.name.split('.').pop().toLowerCase();
+
+    // Show thumbnail for images
+    if (["png","jpg","jpeg","gif","bmp","webp"].includes(ext)) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            uploadIcon.innerHTML = `<img src="${e.target.result}" style="width:48px;height:48px;object-fit:contain;">`;
+        }
+        reader.readAsDataURL(file);
+    } else {
+        // For non-images, show a small text badge
+        uploadIcon.innerHTML = `<div style="
+            width:48px; height:48px;
+            background-color:#eee; color:#333;
+            display:flex; align-items:center; justify-content:center;
+            border-radius:8px; font-weight:bold;
+            font-size:12px;
+        ">${ext.toUpperCase()}</div>`;
+    }
+}
+
+// Circle button selection
+const circleBtns = document.querySelectorAll(".circle-btn");
+circleBtns.forEach(btn => {
+    btn.addEventListener("click", () => {
+        circleBtns.forEach(b => b.classList.remove("selected"));
+        btn.classList.add("selected");
+        document.getElementById("output_type").value = btn.dataset.type;
+    });
+});
+</script>
+</body>
+</html>
+
